@@ -1,26 +1,12 @@
 /**
- * LLM Chat Application Template
- *
- * A simple chat application using Cloudflare Workers AI.
- * This template demonstrates how to implement an LLM-powered chat interface with
- * streaming responses using Server-Sent Events (SSE).
- *
- * @license MIT
+ * LLM Chat Application Template - CACHAMITA EDITION
  */
 import { Env, ChatMessage } from "./types";
 
-// Model ID for Workers AI model
-// https://developers.cloudflare.com/workers-ai/models/
-const MODEL_ID = "@cf/meta/llama-3.1-8b-instruct-fp8";
-
-// Default system prompt
-const SYSTEM_PROMPT =
-	"You are a helpful, friendly assistant. Provide concise and accurate responses.";
+// Usamos el modelo Llama 3 que es rápido y bueno hablando español
+const MODEL_ID = "@cf/meta/llama-3-8b-instruct";
 
 export default {
-	/**
-	 * Main request handler for the Worker
-	 */
 	async fetch(
 		request: Request,
 		env: Env,
@@ -28,59 +14,92 @@ export default {
 	): Promise<Response> {
 		const url = new URL(request.url);
 
-		// Handle static assets (frontend)
+		// ESTA ES LA LÍNEA CLAVE QUE FALTABA:
+		// Sirve los archivos estáticos (HTML, CSS) del frontend
 		if (url.pathname === "/" || !url.pathname.startsWith("/api/")) {
 			return env.ASSETS.fetch(request);
 		}
 
-		// API Routes
+		// API del Chat
 		if (url.pathname === "/api/chat") {
-			// Handle POST requests for chat
 			if (request.method === "POST") {
-				return handleChatRequest(request, env);
+				// Pasamos el env como 'any' para evitar errores de tipo con la DB
+				return handleChatRequest(request, env as any);
 			}
-
-			// Method not allowed for other request types
 			return new Response("Method not allowed", { status: 405 });
 		}
 
-		// Handle 404 for unmatched routes
 		return new Response("Not found", { status: 404 });
 	},
 } satisfies ExportedHandler<Env>;
 
 /**
- * Handles chat API requests
+ * Lógica del Chat con Base de Datos D1
  */
 async function handleChatRequest(
 	request: Request,
-	env: Env,
+	env: any, // Usamos 'any' para que no te de error de Typescript con la DB
 ): Promise<Response> {
 	try {
-		// Parse JSON request body
 		const { messages = [] } = (await request.json()) as {
 			messages: ChatMessage[];
 		};
 
-		// Add system prompt if not present
-		if (!messages.some((msg) => msg.role === "system")) {
-			messages.unshift({ role: "system", content: SYSTEM_PROMPT });
+		// 1. OBTENER EL ÚLTIMO MENSAJE DEL USUARIO
+		const lastUserMsg = messages[messages.length - 1]?.content.toLowerCase() || "";
+
+		// 2. CONSULTAR LA BASE DE DATOS (D1)
+		let menuContext = "";
+		try {
+			// Buscamos platos que coincidan con lo que escribe el usuario
+			const { results } = await env.DB.prepare(
+				"SELECT * FROM menu_items WHERE nombre LIKE ? OR categoria LIKE ? OR descripcion LIKE ? LIMIT 5"
+			).bind(`%${lastUserMsg}%`, `%${lastUserMsg}%`, `%${lastUserMsg}%`).all();
+
+			if (results && results.length > 0) {
+				menuContext = "INFORMACIÓN DEL MENÚ ENCONTRADA: " + JSON.stringify(results);
+			} else {
+				// Si no busca nada específico, traemos 3 platos al azar para sugerir
+				const { results: random } = await env.DB.prepare("SELECT * FROM menu_items LIMIT 3").all();
+				menuContext = "No hay coincidencia exacta. Sugiere estos platos: " + JSON.stringify(random);
+			}
+		} catch (e) {
+			console.error("Error conectando a DB:", e);
+			menuContext = "Error consultando precios. Ofrece el menú general.";
 		}
 
+		// 3. DEFINIR EL CEREBRO DEL BOT (SYSTEM PROMPT)
+		const SYSTEM_PROMPT = `
+		Eres el mesero virtual de "La Cachamita de Oro" en Barinas, Venezuela.
+		
+		TU PERSONALIDAD:
+		- Muy amable, llanero (usa "Epa", "Camarita", "A la orden").
+		- Tu objetivo es vender.
+
+		DATOS DEL MENÚ (Usa esto para responder precios y descripciones):
+		${menuContext}
+
+		REGLAS PARA RESPONDER:
+		1. Si el usuario saluda, di: "¡Epa camarita! 🤠 Bienvenido a La Cachamita de Oro. ¿Le provoco unos Desayunos o prefiere ver los Almuerzos?".
+		2. Cuando des un precio, sé exacto según los DATOS DEL MENÚ.
+		3. Si recomiendas un plato, incluye su FOTO usando este formato exacto al final de la línea:
+		   ![foto](https://cachamachat.estilosgrado33.workers.dev/fotos/ID.png)
+		   (Reemplaza ID por el id que viene en la base de datos, ej: 01, 20).
+		`;
+
+		// Agregamos el prompt al inicio de la conversación
+		const aiMessages = [
+			{ role: "system", content: SYSTEM_PROMPT },
+			...messages.filter(m => m.role !== "system") // Evitamos duplicar systems antiguos
+		];
+
+		// 4. LLAMAR A LA INTELIGENCIA ARTIFICIAL
 		const stream = await env.AI.run(
 			MODEL_ID,
 			{
-				messages,
+				messages: aiMessages,
 				max_tokens: 1024,
 				stream: true,
-			},
-			{
-				// Uncomment to use AI Gateway
-				// gateway: {
-				//   id: "YOUR_GATEWAY_ID", // Replace with your AI Gateway ID
-				//   skipCache: false,      // Set to true to bypass cache
-				//   cacheTtl: 3600,        // Cache time-to-live in seconds
-				// },
 			},
 		);
 
@@ -91,6 +110,7 @@ async function handleChatRequest(
 				connection: "keep-alive",
 			},
 		});
+
 	} catch (error) {
 		console.error("Error processing chat request:", error);
 		return new Response(
