@@ -5,28 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>La Cachamita de Oro</title>
     <style>
-        /* Estilos Generales */
+        /* --- TEMA DORADO PREMIUM --- */
+        :root {
+            --dorado: #D4AF37;       /* El color del oro */
+            --dorado-oscuro: #B48811; 
+            --crema-fondo: #FFFDF5;   /* Fondo que abre el apetito */
+            --marron-texto: #3E2723;  /* Marrón tipo café para el texto */
+            --burbuja-usuario: #FFE082; /* Amarillo suave */
+        }
+
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #ECE5DD; /* Fondo suave tipo WhatsApp */
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--crema-fondo);
             margin: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
+            color: var(--marron-texto);
         }
 
-        /* Cabecera */
+        /* Cabecera Elegante */
         header {
-            background-color: #075E54; /* Verde elegante */
+            background: linear-gradient(135deg, var(--dorado), var(--dorado-oscuro));
             color: white;
             padding: 15px 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            gap: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            border-bottom: 3px solid #fdd835;
         }
-        header h1 { margin: 0; font-size: 1.2rem; font-weight: 600; }
-        .status { font-size: 0.8rem; opacity: 0.8; }
+        
+        .logo-circulo {
+            width: 45px; height: 45px;
+            background: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header h1 { margin: 0; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; }
+        .status { font-size: 0.8rem; opacity: 0.9; font-weight: 500; }
 
         /* Área del Chat */
         #chat-container {
@@ -36,106 +56,122 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
-            background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); /* Fondo tramado sutil */
-            background-blend-mode: soft-light;
+            /* Un fondo sutil de granos o textura llanera quedaría genial aquí */
         }
 
-        /* Burbujas de Mensaje */
+        /* Burbujas de Mensaje Modernas */
         .message {
-            max-width: 80%;
-            padding: 12px 16px;
-            border-radius: 8px;
+            max-width: 85%;
+            padding: 14px 18px;
+            border-radius: 18px;
             line-height: 1.5;
-            position: relative;
             font-size: 0.95rem;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            animation: aparecer 0.3s ease-out;
+        }
+
+        @keyframes aparecer {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .user {
             align-self: flex-end;
-            background-color: #DCF8C6; /* Verde claro usuario */
+            background-color: var(--burbuja-usuario);
             color: #111;
-            border-top-right-radius: 0;
+            border-bottom-right-radius: 2px;
         }
 
         .bot {
             align-self: flex-start;
             background-color: #FFFFFF;
-            color: #111;
-            border-top-left-radius: 0;
+            color: var(--marron-texto);
+            border-bottom-left-radius: 2px;
+            border-left: 4px solid var(--dorado);
         }
 
-        /* Imágenes dentro del chat */
         .bot img {
             max-width: 100%;
-            border-radius: 8px;
+            border-radius: 10px;
             margin-top: 10px;
-            border: 1px solid #eee;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         /* Área de escritura */
         form {
-            background: #f0f0f0;
-            padding: 10px 15px;
+            background: white;
+            padding: 12px 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            border-top: 1px solid #eee;
         }
 
         input {
             flex: 1;
-            padding: 12px 15px;
-            border: none;
-            border-radius: 25px;
-            background: white;
+            padding: 14px 20px;
+            border: 2px solid #f0f0f0;
+            border-radius: 30px;
+            background: #fafafa;
             font-size: 1rem;
             outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            border-color: var(--dorado);
         }
 
         button {
-            background: #075E54;
+            background: var(--dorado);
             color: white;
             border: none;
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.2s;
+            box-shadow: 0 4px 8px rgba(212, 175, 55, 0.4);
+            transition: all 0.2s;
         }
-        button:hover { background: #128C7E; }
         
-        /* Icono de enviar (SVG) */
-        button svg { width: 20px; height: 20px; fill: white; margin-left: 2px; }
+        button:hover {
+            background: var(--dorado-oscuro);
+            transform: scale(1.05);
+        }
+
+        button svg { width: 22px; height: 22px; fill: white; margin-left: 3px; }
 
     </style>
 </head>
 <body>
     <header>
-        <div style="width: 40px; height: 40px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">🐟</div>
+        <div class="logo-circulo">🐟</div>
         <div>
             <h1>La Cachamita de Oro</h1>
-            <div class="status">En línea - Barinas</div>
+            <div class="status">Sabor llanero auténtico en Barinas</div>
         </div>
     </header>
 
     <div id="chat-container">
         <div class="message bot">
-            ¡Hola! 👋 Es un gusto recibirle en <b>La Cachamita de Oro</b>.<br><br>
-            ¿Qué le gustaría ordenar hoy? Tenemos <b>Desayunos</b> y <b>Almuerzos Criollos</b> a su disposición.
+            ¡Es un placer recibirle! 👋 Bienvenido a <b>La Cachamita de Oro</b>.<br><br>
+            ¿Qué se le antoja hoy? Estamos listos para servirle nuestros mejores <b>Desayunos</b> o el menú de <b>Almuerzos</b>.
         </div>
     </div>
 
     <form id="chat-form">
-        <input type="text" id="msg-input" placeholder="Escribe tu mensaje..." required autocomplete="off">
+        <input type="text" id="msg-input" placeholder="Pregunte por su plato favorito..." required autocomplete="off">
         <button type="submit">
             <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
         </button>
     </form>
 
     <script>
+        // ... (El mismo script que tenías funciona perfecto aquí) ...
         const form = document.getElementById('chat-form');
         const container = document.getElementById('chat-container');
         const input = document.getElementById('msg-input');
@@ -160,9 +196,7 @@
                 const reader = response.body.getReader();
                 const decoder = new TextDecoder();
                 let botMessage = "";
-                let botDiv = addMessage("Escribiendo...", 'bot'); 
-
-                // Limpiamos el "Escribiendo..." cuando llega el primer bit de datos
+                let botDiv = addMessage("Preparando respuesta...", 'bot'); 
                 let firstChunk = true;
 
                 while (true) {
@@ -170,15 +204,24 @@
                     if (done) break;
                     
                     const chunk = decoder.decode(value, {stream: true});
-                    botMessage += chunk;
                     
-                    if(firstChunk) {
-                        botDiv.innerHTML = "";
-                        firstChunk = false;
+                    // Aquí la limpieza de datos si el Worker envía JSON crudo
+                    const lines = chunk.split('\n');
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const jsonStr = line.replace('data: ', '').trim();
+                            if (jsonStr === '[DONE]') break;
+                            try {
+                                const data = JSON.parse(jsonStr);
+                                if (data.response) {
+                                    if(firstChunk) { botDiv.innerHTML = ""; firstChunk = false; }
+                                    botMessage += data.response;
+                                    botDiv.innerHTML = parseMarkdown(botMessage);
+                                    container.scrollTop = container.scrollHeight;
+                                }
+                            } catch (e) {}
+                        }
                     }
-                    
-                    botDiv.innerHTML = parseMarkdown(botMessage);
-                    container.scrollTop = container.scrollHeight;
                 }
                 history.push({role: "assistant", content: botMessage});
             } catch (err) {
