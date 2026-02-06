@@ -3,7 +3,6 @@
  */
 import { Env, ChatMessage } from "./types";
 
-// Modelo de IA optimizado
 const MODEL_ID = "@cf/meta/llama-3-8b-instruct";
 
 export default {
@@ -14,20 +13,16 @@ export default {
 	): Promise<Response> {
 		const url = new URL(request.url);
 
-		// 1. RUTA API: Maneja la inteligencia y la base de datos
 		if (url.pathname === "/api/chat" && request.method === "POST") {
 			return handleChatRequest(request, env as any);
 		}
 
-		// 2. RUTA PRINCIPAL: Sirve la nueva interfaz gráfica (HTML)
-		// Si es la raíz "/", devolvemos el HTML moderno directamente
 		if (url.pathname === "/") {
 			return new Response(html, {
 				headers: { "Content-Type": "text/html;charset=UTF-8" },
 			});
 		}
 
-		// 3. ARCHIVOS ESTÁTICOS: Para fotos u otros recursos en /public
 		return env.ASSETS.fetch(request);
 	},
 } satisfies ExportedHandler<Env>;
@@ -43,7 +38,6 @@ async function handleChatRequest(request: Request, env: any): Promise<Response> 
 
 		const lastUserMsg = messages[messages.length - 1]?.content.toLowerCase() || "";
 
-		// --- PASO A: BUSCAR EN LA BASE DE DATOS (D1) ---
 		let menuContext = "";
 		try {
 			const { results } = await env.DB.prepare(
@@ -51,35 +45,27 @@ async function handleChatRequest(request: Request, env: any): Promise<Response> 
 			).bind(`%${lastUserMsg}%`, `%${lastUserMsg}%`, `%${lastUserMsg}%`).all();
 
 			if (results && results.length > 0) {
-				menuContext = "INFORMACIÓN DEL MENÚ ENCONTRADA: " + JSON.stringify(results);
+				menuContext = "INFORMACIÓN DEL MENÚ: " + JSON.stringify(results);
 			} else {
-				// Si no hay búsqueda específica, traer sugerencias generales
 				const { results: random } = await env.DB.prepare("SELECT * FROM menu_items LIMIT 3").all();
-				menuContext = "No hay coincidencia exacta. Sugerencias generales: " + JSON.stringify(random);
+				menuContext = "Sugerencias generales: " + JSON.stringify(random);
 			}
 		} catch (e) {
-			console.error("Error DB:", e);
-			menuContext = "Error de conexión a precios. Ofrece el menú general.";
+			menuContext = "Error de conexión. Ofrece el menú general.";
 		}
 
-		// --- PASO B: PERSONALIDAD DEL BOT ---
 		const SYSTEM_PROMPT = `
-		Eres el asistente virtual oficial de "La Cachamita de Oro" en Barinas, Venezuela.
+		Eres el anfitrión de "La Cachamita de Oro" en Barinas.
+		TONO: Elegante, cálido y servicial.
+		OBJETIVO: Vender comida llanera de calidad.
 		
-		TU PERSONALIDAD:
-		- Tono: Profesional, cálido, acogedor y educado.
-		- Saludo: "¡Bienvenido a La Cachamita de Oro! 🐟 Es un gusto recibirle."
-		- Estilo: Servicial y directo para tomar pedidos. NO uses jergas antiguas como "camarita".
-		
-		DATOS REALES DEL MENÚ (Precios y Descripciones):
-		${menuContext}
+		DATOS DEL MENÚ: ${menuContext}
 
-		INSTRUCCIONES CLAVE:
-		1. Si el usuario saluda, ofrece ver "Desayunos" o "Almuerzos Criollos".
-		2. Si das un precio, sé exacto según la base de datos.
-		3. AL RECOMENDAR UN PLATO, SIEMPRE INCLUYE LA FOTO ASÍ AL FINAL:
+		INSTRUCCIONES:
+		1. Saludo: "¡Bienvenido a La Cachamita de Oro! 🐟 El sabor auténtico de Barinas. ¿Desea ver nuestros Desayunos o los Almuerzos Criollos?".
+		2. Precios exactos según la base de datos.
+		3. AL RECOMENDAR UN PLATO, PON LA FOTO ASÍ AL FINAL:
 		   ![foto](https://cachamachat.estilosgrado33.workers.dev/fotos/ID.png)
-		   (Reemplaza 'ID' por el id del plato que viene en la base de datos, ej: 01, 20).
 		`;
 
 		const aiMessages = [
@@ -94,11 +80,7 @@ async function handleChatRequest(request: Request, env: any): Promise<Response> 
 		});
 
 		return new Response(stream, {
-			headers: {
-				"content-type": "text/event-stream; charset=utf-8",
-				"cache-control": "no-cache",
-				connection: "keep-alive",
-			},
+			headers: { "content-type": "text/event-stream; charset=utf-8" },
 		});
 	} catch (error) {
 		return new Response(JSON.stringify({ error: "Error interno" }), { status: 500 });
@@ -106,7 +88,7 @@ async function handleChatRequest(request: Request, env: any): Promise<Response> 
 }
 
 /**
- * INTERFAZ GRÁFICA MODERNA (HTML/CSS/JS)
+ * INTERFAZ GRÁFICA "GOLD EDITION" (HTML/CSS)
  */
 const html = `
 <!DOCTYPE html>
@@ -116,135 +98,154 @@ const html = `
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>La Cachamita de Oro</title>
     <style>
-        /* RESET & BASICS */
-        * { box-sizing: border-box; }
+        /* COLORES Y FUENTES */
+        :root {
+            --primary-gold: #D4AF37; /* Dorado Clásico */
+            --primary-dark: #B48811; /* Dorado Oscuro */
+            --bg-cream: #FFFBF0;     /* Crema suave */
+            --text-dark: #3E2723;    /* Marrón Café */
+            --user-bubble: #FFE082;  /* Amarillo suave */
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #e5ddd5; /* Fondo clásico de apps de chat */
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-cream);
             margin: 0;
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overscroll-behavior: none;
+            color: var(--text-dark);
         }
 
         /* HEADER */
         header {
-            background-color: #008069; /* Verde Oscuro Profesional */
+            background: linear-gradient(135deg, var(--primary-gold), var(--primary-dark));
             color: white;
-            padding: 15px;
+            padding: 15px 20px;
             display: flex;
             align-items: center;
-            gap: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            z-index: 10;
+            gap: 15px;
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
         }
-        .avatar {
-            width: 40px; height: 40px;
+        .logo-circle {
             background: white;
+            color: var(--primary-dark);
+            width: 45px; height: 45px;
             border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-size: 24px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .info h1 { margin: 0; font-size: 16px; font-weight: 600; }
-        .info p { margin: 0; font-size: 12px; opacity: 0.8; }
+        .header-info h1 { margin: 0; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header-info p { margin: 0; font-size: 0.8rem; opacity: 0.9; }
 
         /* CHAT AREA */
         #chat-container {
             flex: 1;
             overflow-y: auto;
-            padding: 15px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            background-image: linear-gradient(#e5ddd5 2px, transparent 2px), linear-gradient(90deg, #e5ddd5 2px, transparent 2px);
-            background-size: 20px 20px;
-            background-color: #efe7dd;
+            gap: 15px;
         }
 
         /* MENSAJES */
         .message {
-            max-width: 80%;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 15px;
-            line-height: 1.4;
+            max-width: 85%;
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 0.95rem;
+            line-height: 1.5;
             position: relative;
-            box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            animation: fadeIn 0.3s ease;
         }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
         .bot {
             align-self: flex-start;
             background: white;
             border-top-left-radius: 0;
-            color: #111;
+            border-left: 4px solid var(--primary-gold); /* Detalle elegante */
         }
+
         .user {
             align-self: flex-end;
-            background: #d9fdd3; /* Verde claro usuario */
+            background: var(--user-bubble);
             border-top-right-radius: 0;
-            color: #111;
+            color: #333;
         }
         
-        /* FOTOS EN EL CHAT */
         .bot img {
             max-width: 100%;
-            border-radius: 6px;
-            margin-top: 8px;
-            display: block;
+            border-radius: 10px;
+            margin-top: 10px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+            border: 2px solid #fff;
         }
 
         /* INPUT AREA */
         form {
-            background: #f0f2f5;
-            padding: 10px;
+            background: white;
+            padding: 15px;
             display: flex;
             align-items: center;
             gap: 10px;
-            border-top: 1px solid #ddd;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
         }
+
         input {
             flex: 1;
-            padding: 12px 15px;
-            border: none;
-            border-radius: 20px;
-            background: white;
-            font-size: 15px;
+            padding: 15px;
+            border: 2px solid #EEE;
+            border-radius: 25px;
+            background: #FAFAFA;
+            font-size: 1rem;
             outline: none;
+            transition: border-color 0.3s;
         }
+        input:focus { border-color: var(--primary-gold); background: white; }
+
         button {
-            background: #008069;
+            background: var(--primary-gold);
             color: white;
             border: none;
-            width: 40px; height: 40px;
+            width: 50px; height: 50px;
             border-radius: 50%;
             cursor: pointer;
             display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.4);
+            transition: transform 0.2s;
         }
-        button svg { fill: white; width: 20px; height: 20px; margin-left: 2px; }
+        button:active { transform: scale(0.95); }
+        button svg { width: 22px; height: 22px; fill: white; margin-left: 3px; }
 
-        /* LOADING DOTS */
-        .typing { font-style: italic; color: #888; font-size: 12px; margin-left: 10px; display: none; }
+        /* LOADING */
+        .typing { font-size: 12px; color: #999; margin-left: 20px; margin-bottom: 5px; display: none; }
     </style>
 </head>
 <body>
     <header>
-        <div class="avatar">🐟</div>
-        <div class="info">
+        <div class="logo-circle">🐟</div>
+        <div class="header-info">
             <h1>La Cachamita de Oro</h1>
-            <p>En línea | Barinas</p>
+            <p>Sabor llanero auténtico</p>
         </div>
     </header>
 
     <div id="chat-container">
         <div class="message bot">
-            ¡Hola! 👋 Es un gusto saludarle. <br><br>
-            Bienvenido a <b>La Cachamita de Oro</b>. ¿Le gustaría ver nuestro menú de <b>Desayunos</b> o prefiere los <b>Almuerzos Criollos</b>?
+            ¡Hola! 👋 Bienvenido a <b>La Cachamita de Oro</b>.<br><br>
+            Hoy tenemos la mejor sazón de Barinas lista para usted. ¿Le gustaría ver el menú de <b>Desayunos</b> o prefiere los <b>Almuerzos</b>? 🍛
         </div>
     </div>
-    <div class="typing" id="typing-indicator">Escribiendo...</div>
+    <div class="typing" id="typing-indicator">El mesero está escribiendo...</div>
 
     <form id="chat-form">
-        <input type="text" id="msg-input" placeholder="Escribe un mensaje..." required autocomplete="off">
+        <input type="text" id="msg-input" placeholder="Pregunta por un plato..." required autocomplete="off">
         <button type="submit">
             <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path></svg>
         </button>
@@ -265,8 +266,7 @@ const html = `
             input.value = '';
             addMessage(text, 'user');
             history.push({role: "user", content: text});
-            
-            typing.style.display = 'block'; // Mostrar indicador
+            typing.style.display = 'block';
 
             try {
                 const response = await fetch('/api/chat', {
@@ -286,7 +286,7 @@ const html = `
                     if (done) break;
                     
                     if(firstChunk) {
-                        typing.style.display = 'none'; // Ocultar indicador
+                        typing.style.display = 'none';
                         botDiv = addMessage("", 'bot');
                         firstChunk = false;
                     }
@@ -299,7 +299,7 @@ const html = `
                 history.push({role: "assistant", content: botMessage});
             } catch (err) {
                 typing.style.display = 'none';
-                addMessage("Disculpe, hubo un error de conexión.", 'bot');
+                addMessage("Disculpe, verifique su conexión.", 'bot');
             }
         });
 
@@ -313,7 +313,6 @@ const html = `
         }
 
         function parseMarkdown(text) {
-            // Convierte imágenes y saltos de línea
             let html = text.replace(/!\[.*?\]\((.*?)\)/g, '<img src="$1">');
             return html.replace(/\\n/g, '<br>');
         }
